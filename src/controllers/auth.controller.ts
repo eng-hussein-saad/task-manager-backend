@@ -3,6 +3,7 @@ import { body, validationResult } from "express-validator";
 import { UserModel } from "../models/user.model";
 import { comparePassword, hashPassword } from "../utils/hash";
 import { signToken } from "../utils/jwt";
+import { AuthedRequest } from "../middlewares/auth.middleware";
 
 // Validation rules for registration
 export const registerValidators = [
@@ -86,4 +87,13 @@ export async function login(req: Request, res: Response) {
     },
     token,
   });
+}
+
+// POST /api/auth/refresh (requires Bearer token)
+export async function refreshToken(req: AuthedRequest, res: Response) {
+  if (!req.user) return res.status(401).json({ message: "Unauthorized" });
+  const user = await UserModel.findById(req.user.user_id);
+  if (!user) return res.status(401).json({ message: "Unauthorized" });
+  const token = signToken({ user_id: user.user_id, email: user.email });
+  return res.json({ token });
 }
